@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>合成小展展</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#fff6ea;--card:#fffdf9;--ink:#4a2f1a;--sub:#9a7b62;--line:#f0d6b8;--a:#ff6b5e;--gold:#e8a21c;--board:#ffe9c9}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#241a12;--card:#33261b;--ink:#fbe8d0;--sub:#c0a285;--line:#5a432e;--board:#3d2d1f}}
+:root[data-theme="dark"]{--bg:#241a12;--card:#33261b;--ink:#fbe8d0;--sub:#c0a285;--line:#5a432e;--board:#3d2d1f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;min-height:100%}
+.wrap{display:flex;gap:18px;justify-content:center;align-items:flex-start;padding:20px;flex-wrap:wrap}
+.board{position:relative;width:min(360px,calc(100vw - 40px));background:linear-gradient(#fffdf9,var(--board));border-radius:24px;box-shadow:0 12px 40px #b9783a33;overflow:hidden}
+canvas{display:block;width:100%;height:auto;touch-action:none}
+.panel{width:min(280px,calc(100vw - 40px));background:var(--card);border-radius:24px;padding:18px;box-shadow:0 12px 40px #b9783a22}
+h1{margin:0;font-size:28px;color:var(--a)}
+.sub{font-size:12px;color:var(--sub);margin:4px 0 14px}
+.row{display:flex;gap:10px}
+.box{flex:1;background:var(--bg);border-radius:14px;padding:8px 12px}
+.box small,.lab{font-size:11px;color:var(--sub)}
+.box b{display:block;font-size:26px}
+#best{color:var(--gold)}
+.sec{background:var(--bg);border-radius:14px;padding:10px 12px;margin-top:12px}
+#nx{text-align:center;font-size:48px;height:60px;line-height:60px}
+#chart{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+#chart span{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b8,#f0b93a);display:grid;place-items:center;font-size:13px}
+button{font:inherit;border:0;border-radius:14px;padding:11px;cursor:pointer;color:var(--ink);background:var(--bg);font-weight:700}
+button:focus-visible{outline:3px solid var(--a);outline-offset:2px}
+.btns{display:flex;gap:10px;margin-top:12px}.btns button{flex:1}
+#re{background:linear-gradient(135deg,#ff8a6b,#ee5252);color:#fff}
+#lb{width:100%;margin-top:12px}
+.tip{font-size:11px;color:var(--sub);text-align:center;margin-top:12px;line-height:1.7}
+#ov{position:absolute;inset:0;background:#2a1a0dcc;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+#ov.on{display:flex}#ov b{font-size:30px}
+#rank{margin:8px 0 0;padding-left:20px;font-size:14px;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="board">
+  <canvas id="c" width="360" height="560" aria-label="游戏区域"></canvas>
+  <div id="ov"><b>游戏结束</b><div id="fs"></div><button id="re2" style="padding:10px 28px;background:#ff6b5e;color:#fff">再来一局</button></div>
+ </div>
+ <div class="panel">
+  <h1>合成小展展</h1>
+  <p class="sub">相同的撞在一起，越合越大</p>
+  <div class="row"><div class="box"><small>分数</small><b id="sc">0</b></div><div class="box"><small>最高分</small><b id="best">0</b></div></div>
+  <div class="sec"><div class="lab">下一个</div><div id="nx"></div></div>
+  <div class="sec"><div class="lab">合成表</div><div id="chart"></div></div>
+  <button id="lb">🏆 排行榜</button>
+  <ol id="rank"></ol>
+  <div class="btns"><button id="snd">🔊 音效开</button><button id="re">↻ 重开</button></div>
+  <div class="tip">鼠标：移动瞄准，点击投放；触屏：拖动瞄准，松手投放。<br>← → 微调位置，空格投放，R 重开。</div>
+ </div>
+</div>
+<script>
+const E=['🥚','🐣','🐥','🐭','🐹','🐰','🐱','🐶','🐷','🐮','🐲'];
+const R=[15,21,27,34,42,51,61,72,84,97,111];
+const W=360,H=560,LINE=105,G=0.32;
+const cv=document.getElementById('c'),x=cv.getContext('2d');
+const $=id=>document.getElementById(id);
+let balls,score,best=0,cur,nxt,px=W/2,cool=0,over,sound=true,aud,pops;
+let board=[];
+function ld(){try{best=+localStorage.getItem('xzz_best')||0;board=JSON.parse(localStorage.getItem('xzz_board')||'[]')}catch(e){}}
+function sv(){try{localStorage.setItem('xzz_best',best);localStorage.setItem('xzz_board',JSON.stringify(board))}catch(e){}}
+function beep(f,d=.08){if(!sound)return;try{aud=aud||new (window.AudioContext||window.webkitAudioContext)();const o=aud.createOscillator(),g=aud.createGain();o.frequency.value=f;o.type='sine';g.gain.setValueAtTime(.12,aud.currentTime);g.gain.exponentialRampToValueAtTime(.001,aud.currentTime+d);o.connect(g);g.connect(aud.destination);o.start();o.stop(aud.currentTime+d)}catch(e){}}
+function rnd(){return Math.floor(Math.random()*4)}
+function reset(){balls=[];score=0;over=false;pops=[];cur=rnd();nxt=rnd();cool=0;$('ov').classList.remove('on');ui()}
+function ui(){$('sc').textContent=score;$('best').textContent=best;$('nx').textContent=E[nxt]}
+function drop(){
+  if(over||cool>0)return;
+  const r=R[cur];balls.push({x:Math.min(W-r-4,Math.max(r+4,px)),y:LINE-r-10,vx:0,vy:0,l:cur,r,age:0,del:false});
+  beep(300);cur=nxt;nxt=rnd();cool=30;ui();
+}
+function step(){
+  for(const b of balls){b.vy+=G;b.x+=b.vx;b.y+=b.vy;b.vx*=.995;b.vy*=.995;b.age++;
+    if(b.x<b.r+4){b.x=b.r+4;b.vx*=-.2}
+    if(b.x>W-b.r-4){b.x=W-b.r-4;b.vx*=-.2}
+    if(b.y>H-b.r-4){b.y=H-b.r-4;b.vy*=-.15;b.vx*=.95}}
+  const add=[];
+  for(let i=0;i<balls.length;i++)for(let j=i+1;j<balls.length;j++){
+    const a=balls[i],b=balls[j];if(a.del||b.del)continue;
+    let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),m=a.r+b.r;
+    if(d>=m||d===0)continue;
+    if(a.l===b.l&&a.l<E.length-1){
+      a.del=b.del=true;const l=a.l+1;
+      add.push({x:(a.x+b.x)/2,y:(a.y+b.y)/2,vx:0,vy:0,l,r:R[l],age:0,del:false});
+      score+=(l)*(l+1)/2+1;if(score>best){best=score;sv()}
+      pops.push({x:(a.x+b.x)/2,y:(a.y+b.y)/2,t:0,r:R[l]});beep(380+l*70,.15);ui();continue}
+    const nx=dx/d,ny=dy/d,o=(m-d)/2;
+    a.x-=nx*o;a.y-=ny*o;b.x+=nx*o;b.y+=ny*o;
+    const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+    if(rv<0){const k=rv*.55;a.vx+=k*nx;a.vy+=k*ny;b.vx-=k*nx;b.vy-=k*ny}
+  }
+  balls=balls.filter(b=>!b.del).concat(add);
+}
+let danger=0;
+function loop(){
+  if(!over){step();step();
+    if(cool>0)cool--;
+    const hot=balls.some(b=>b.age>90&&b.y-b.r<LINE&&Math.abs(b.vy)<1.5);
+    danger=hot?danger+1:0;
+    if(danger>150)end();}
+  draw();requestAnimationFrame(loop);
+}
+function end(){over=true;board.push(score);board.sort((a,b)=>b-a);board=board.slice(0,5);sv();$('fs').textContent='本局得分 '+score;$('ov').classList.add('on');beep(160,.4);rank()}
+function rank(){$('rank').innerHTML=board.length?board.map(s=>'<li>'+s+' 分</li>').join(''):'<li style="list-style:none;margin-left:-20px">还没有记录</li>'}
+function ball(b){
+  const g=x.createRadialGradient(b.x-b.r*.3,b.y-b.r*.35,b.r*.1,b.x,b.y,b.r);
+  g.addColorStop(0,'#fff6c2');g.addColorStop(.7,'#f6c850');g.addColorStop(1,'#d98f14');
+  x.fillStyle=g;x.beginPath();x.arc(b.x,b.y,b.r,0,7);x.fill();
+  x.strokeStyle='#c27c0e55';x.lineWidth=2;x.stroke();
+  x.font=Math.round(b.r*1.15)+'px serif';x.textAlign='center';x.textBaseline='middle';
+  x.fillText(E[b.l],b.x,b.y+b.r*.06);
+}
+function draw(){
+  x.clearRect(0,0,W,H);
+  x.setLineDash([6,6]);x.strokeStyle='#e5b98a';x.lineWidth=1.5;
+  x.beginPath();x.moveTo(0,LINE);x.lineTo(W,LINE);x.stroke();
+  if(!over){const r=R[cur],cx=Math.min(W-r-4,Math.max(r+4,px));
+    x.beginPath();x.moveTo(cx,LINE-10);x.lineTo(cx,H);x.stroke();x.setLineDash([]);
+    ball({x:cx,y:LINE-r-10,r,l:cur});x.globalAlpha=1}
+  x.setLineDash([]);
+  for(const b of balls)ball(b);
+  for(const p of pops){p.t++;x.strokeStyle='rgba(255,190,60,'+(1-p.t/18)+')';x.lineWidth=4;x.beginPath();x.arc(p.x,p.y,p.r+p.t*1.5,0,7);x.stroke()}
+  pops=pops.filter(p=>p.t<18);
+  if(danger>0&&!over){x.fillStyle='rgba(255,70,60,'+(.12+.1*Math.sin(danger/5))+')';x.fillRect(0,0,W,LINE)}
+}
+function pos(e){const r=cv.getBoundingClientRect();const t=e.touches?e.touches[0]||e.changedTouches[0]:e;px=(t.clientX-r.left)*W/r.width}
+cv.addEventListener('mousemove',pos);
+cv.addEventListener('click',e=>{pos(e);drop()});
+cv.addEventListener('touchstart',e=>{pos(e)},{passive:true});
+cv.addEventListener('touchmove',e=>{pos(e);e.preventDefault()},{passive:false});
+cv.addEventListener('touchend',e=>{pos(e);drop()});
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft')px-=14;else if(e.key==='ArrowRight')px+=14;
+  else if(e.code==='Space'){e.preventDefault();drop()}else if(e.key==='r'||e.key==='R')reset();
+  px=Math.max(0,Math.min(W,px))});
+$('re').onclick=$('re2').onclick=reset;
+$('snd').onclick=()=>{sound=!sound;$('snd').textContent=sound?'🔊 音效开':'🔇 音效关'};
+$('lb').onclick=()=>{rank();const r=$('rank');r.style.display=r.style.display==='block'?'none':'block'};
+$('chart').innerHTML=E.map(e=>'<span>'+e+'</span>').join('');
+ld();reset();loop();
+</script>
+</body>
+</html>
