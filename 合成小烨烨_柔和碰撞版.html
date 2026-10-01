@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>合成小烨烨</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: #fdf6ec;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+      color: #5a4a42;
+    }
+    #game-container {
+      position: relative;
+      width: 100vw;
+      max-width: 480px;
+      height: 100vh;
+      max-height: 840px;
+      background: #fff9f2;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    header {
+      padding: 12px 16px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      border-bottom: 2px solid #f3e5d8;
+      z-index: 10;
+    }
+    .title-group h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #ff6b6b;
+      letter-spacing: 1px;
+    }
+    .score-board {
+      display: flex;
+      gap: 12px;
+    }
+    .score-badge {
+      background: #fef0e6;
+      border: 1px solid #fed7c3;
+      padding: 4px 10px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .score-badge .label {
+      font-size: 10px;
+      color: #b08d79;
+      font-weight: 600;
+    }
+    .score-badge .val {
+      font-size: 16px;
+      font-weight: bold;
+      color: #e65100;
+    }
+    .top-controls {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid #ffd8bf;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      transition: all 0.2s;
+    }
+    .btn-circle:hover {
+      background: #fff2e8;
+      transform: scale(1.05);
+    }
+    #preview-area {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: #fffdfa;
+      border-bottom: 1px dashed #f0dac5;
+      font-size: 13px;
+      font-weight: 600;
+      color: #8c7365;
+      z-index: 5;
+    }
+    .next-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #next-canvas {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid #ffe7ba;
+    }
+    #canvas-wrap {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: crosshair;
+    }
+    canvas#game-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    /* Modal */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-title {
+      font-size: 22px;
+      font-weight: bold;
+      color: #ff5722;
+      margin-bottom: 12px;
+    }
+    .modal-body {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #6d5b52;
+      margin-bottom: 20px;
+    }
+    .btn-main {
+      background: linear-gradient(135deg, #ff7a45, #fa541c);
+      color: #fff;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 24px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(250, 84, 28, 0.35);
+      transition: all 0.2s;
+    }
+    .btn-main:active {
+      transform: scale(0.96);
+    }
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #666;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+    /* Settings / Customization */
+    .tier-list {
+      max-height: 320px;
+      overflow-y: auto;
+      text-align: left;
+      margin-bottom: 16px;
+      padding-right: 4px;
+    }
+    .tier-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      border-bottom: 1px solid #f3ece6;
+      font-size: 13px;
+    }
+    .tier-avatar-preview {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid #ddd;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <div class="title-group">
+        <h1>合成小烨烨</h1>
+      </div>
+      <div class="score-board">
+        <div class="score-badge">
+          <div class="label">得分</div>
+          <div class="val" id="score">0</div>
+        </div>
+        <div class="score-badge">
+          <div class="label">最高</div>
+          <div class="val" id="best-score">0</div>
+        </div>
+      </div>
+      <div class="top-controls">
+        <button class="btn-circle" id="btn-sound" title="音效">🔔</button>
+        <button class="btn-circle" id="btn-custom" title="换头像">🎨</button>
+        <button class="btn-circle" id="btn-restart" title="重新开始">🔄</button>
+      </div>
+    </header>
+
+    <div id="preview-area">
+      <div class="next-wrap">
+        <span>下一个:</span>
+        <canvas id="next-canvas" width="72" height="72"></canvas>
+      </div>
+      <div id="guide-tip">移动鼠标定位，点击立即释放</div>
+    </div>
+
+    <div id="canvas-wrap">
+      <canvas id="game-canvas"></canvas>
+    </div>
+
+    <!-- 结算弹窗 -->
+    <div class="modal-overlay" id="modal-over">
+      <div class="modal-card">
+        <div class="modal-title">游戏结束</div>
+        <div class="modal-body">
+          <p style="font-size: 16px; margin-bottom: 8px;">本次得分: <strong id="over-score" style="color: #fa541c; font-size: 24px;">0</strong></p>
+          <p id="over-eval">再接再厉，合出最大的终极小烨烨吧！</p>
+        </div>
+        <button class="btn-main" id="btn-re-play">再玩一次</button>
+      </div>
+    </div>
+
+    <!-- 自定义头像弹窗 -->
+    <div class="modal-overlay" id="modal-custom">
+      <div class="modal-card" style="max-width: 420px;">
+        <div class="modal-title" style="font-size: 18px;">自定义小烨烨头像 (共11阶)</div>
+        <div class="modal-body" style="margin-bottom: 12px;">
+          <p style="font-size: 12px; color: #888; margin-bottom: 10px;">点击各等级上传专属照片，实时替换游戏中对应的形象：</p>
+          <div class="tier-list" id="tier-list"></div>
+        </div>
+        <div>
+          <button class="btn-main" id="btn-save-custom">保存并继续</button>
+          <button class="btn-secondary" id="btn-reset-custom">恢复默认</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 11个等级的小烨烨定义
+    const DEFAULT_TIERS = [
+      { level: 0, name: "呆萌烨烨", radius: 18, color: "#ff9aa2", emoji: "👶", score: 2 },
+      { level: 1, name: "眨眼烨烨", radius: 24, color: "#ffb7b2", emoji: "😉", score: 4 },
+      { level: 2, name: "贪吃烨烨", radius: 32, color: "#ffdac1", emoji: "😋", score: 8 },
+      { level: 3, name: "比心烨烨", radius: 42, color: "#e2f0cb", emoji: "🥰", score: 16 },
+      { level: 4, name: "搞怪烨烨", radius: 52, color: "#b5ead7", emoji: "😜", score: 32 },
+      { level: 5, name: "机智烨烨", radius: 64, color: "#c7ceea", emoji: "🤓", score: 64 },
+      { level: 6, name: "阳光烨烨", radius: 78, color: "#fed766", emoji: "😎", score: 128 },
+      { level: 7, name: "元气烨烨", radius: 94, color: "#fe9c8f", emoji: "🥳", score: 256 },
+      { level: 8, name: "帅气烨烨", radius: 110, color: "#f78888", emoji: "🤩", score: 512 },
+      { level: 9, name: "霸气烨烨", radius: 128, color: "#e056fd", emoji: "👑", score: 1024 },
+      { level: 10, name: "终极小烨烨", radius: 148, color: "#ff4757", emoji: "🌟", score: 2048 }
+    ];
+
+    // 本地存储自定义图片
+    let customImages = {};
+    const imgCache = {};
+
+    function loadCustomImages() {
+      try {
+        const saved = localStorage.getItem("xyy_custom_images");
+        if (saved) {
+          customImages = JSON.parse(saved);
+        }
+      } catch (e) {}
+      updateImageCache();
+    }
+
+    function updateImageCache() {
+      DEFAULT_TIERS.forEach(t => {
+        if (customImages[t.level]) {
+          const img = new Image();
+          img.src = customImages[t.level];
+          imgCache[t.level] = img;
+        } else {
+          delete imgCache[t.level];
+        }
+      });
+    }
+
+    // 音效引擎 (Web Audio API)
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+      }
+      playDrop() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.12);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+      playMerge(level) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const baseFreq = 260 + level * 45;
+        [0, 0.06].forEach((delay, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(baseFreq * (idx === 0 ? 1 : 1.25), now + delay);
+          gain.gain.setValueAtTime(0.25, now + delay);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.18);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + delay);
+          osc.stop(now + delay + 0.18);
+        });
+      }
+      playOver() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(280, now);
+        osc.frequency.linearRampToValueAtTime(110, now + 0.4);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // 粒子系统
+    class Particle {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 5 + 2;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.radius = Math.random() * 4 + 3;
+        this.alpha = 1;
+        this.life = 0.94;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.96;
+        this.vy = this.vy * 0.96 + 0.15;
+        this.alpha *= this.life;
+        this.radius *= 0.97;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // 游戏小球球体
+    class Ball {
+      constructor(x, y, level) {
+        this.x = x;
+        this.y = y;
+        this.vx = 0;
+        this.vy = 0;
+        this.level = level;
+        this.info = DEFAULT_TIERS[level];
+        this.radius = this.info.radius;
+        this.mass = this.radius * this.radius;
+        this.markedForRemove = false;
+        this.dropTime = Date.now();
+        this.scale = 0.2; // 出场缩放动效
+      }
+      update(dt, gravity, damping, width, height) {
+        // 出场缩放平滑变大
+        if (this.scale < 1) {
+          this.scale = Math.min(1, this.scale + 0.08);
+        }
+        this.vy += gravity;
+        this.vy = Math.min(this.vy, 12); // 限制终端下落速度
+        this.vx *= damping;
+        this.vy *= damping;
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        const effectiveRadius = this.radius * this.scale;
+
+        // 边界碰撞（降低弹性，防止侧面弹飞）
+        if (this.x - effectiveRadius < 0) {
+          this.x = effectiveRadius;
+          this.vx = -this.vx * 0.12;
+        } else if (this.x + effectiveRadius > width) {
+          this.x = width - effectiveRadius;
+          this.vx = -this.vx * 0.12;
+        }
+
+        if (this.y + effectiveRadius > height) {
+          this.y = height - effectiveRadius;
+          this.vy = -this.vy * 0.08; // 落地柔和反弹并迅速静止
+          this.vx *= 0.82; // 地面摩擦力
+          if (Math.abs(this.vy) < 0.2) this.vy = 0;
+        }
+      }
+      draw(ctx) {
+        const r = this.radius * this.scale;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // 阴影
+        ctx.shadowColor = "rgba(0,0,0,0.12)";
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetY = 3;
+
+        // 圆形外框/背景
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fillStyle = this.info.color;
+        ctx.fill();
+
+        ctx.shadowColor = "transparent";
+
+        // 如果有自定义图片则绘制图片
+        const customImg = imgCache[this.level];
+        if (customImg && customImg.complete && customImg.naturalWidth > 0) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(0, 0, r - 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(customImg, -r, -r, r * 2, r * 2);
+          ctx.restore();
+        } else {
+          // 默认头像绘制：高光与表情
+          ctx.beginPath();
+          ctx.arc(-r * 0.3, -r * 0.3, r * 0.25, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+          ctx.fill();
+
+          // 绘制表情与文字
+          ctx.fillStyle = "#3e2723";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+
+          const fontSize = Math.max(12, Math.floor(r * 0.75));
+          ctx.font = `${fontSize}px -apple-system, sans-serif`;
+          ctx.fillText(this.info.emoji, 0, -r * 0.05);
+
+          if (r >= 38) {
+            ctx.font = `bold ${Math.max(10, Math.floor(r * 0.22))}px sans-serif`;
+            ctx.fillStyle = "rgba(0,0,0,0.65)";
+            ctx.fillText(this.info.name, 0, r * 0.6);
+          }
+        }
+
+        // 外层细腻描边
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.65)";
+        ctx.lineWidth = Math.max(1.5, r * 0.05);
+        ctx.beginPath();
+        ctx.arc(0, 0, r - 1, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
+    // 游戏主控制器
+    class Game {
+      constructor() {
+        this.canvas = document.getElementById("game-canvas");
+        this.ctx = this.canvas.getContext("2d");
+        this.nextCanvas = document.getElementById("next-canvas");
+        this.nextCtx = this.nextCanvas.getContext("2d");
+
+        this.scoreEl = document.getElementById("score");
+        this.bestScoreEl = document.getElementById("best-score");
+
+        this.balls = [];
+        this.particles = [];
+
+        this.score = 0;
+        this.bestScore = parseInt(localStorage.getItem("xyy_best_score") || "0");
+        this.bestScoreEl.textContent = this.bestScore;
+
+        this.currentTier = 0;
+        this.nextTier = 0;
+        this.pointerX = 200;
+        this.canDrop = true;
+        this.dropCooldown = 600; // ms
+        this.lastDropTime = 0;
+        this.isTouchActive = false;
+
+        this.dangerLineY = 110;
+        this.dangerTimer = 0;
+        this.isGameOver = false;
+
+        this.gravity = 0.42;
+        this.damping = 0.994;
+
+        this.initCanvasSize();
+        window.addEventListener("resize", () => this.initCanvasSize());
+
+        this.setupInput();
+        this.setupButtons();
+        this.pickInitialTiers();
+
+        requestAnimationFrame((t) => this.loop(t));
+      }
+
+      initCanvasSize() {
+        const wrap = document.getElementById("canvas-wrap");
+        const rect = wrap.getBoundingClientRect();
+        this.width = rect.width;
+        this.height = rect.height;
+
+        this.canvas.width = this.width * window.devicePixelRatio;
+        this.canvas.height = this.height * window.devicePixelRatio;
+        this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+        this.pointerX = this.width / 2;
+      }
+
+      pickInitialTiers() {
+        this.currentTier = Math.floor(Math.random() * 3);
+        this.nextTier = Math.floor(Math.random() * 4);
+        this.renderNextPreview();
+      }
+
+      renderNextPreview() {
+        const info = DEFAULT_TIERS[this.nextTier];
+        const ctx = this.nextCtx;
+        const w = this.nextCanvas.width;
+        const h = this.nextCanvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const r = w / 2 - 4;
+        ctx.save();
+        ctx.translate(w / 2, h / 2);
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fillStyle = info.color;
+        ctx.fill();
+
+        const customImg = imgCache[info.level];
+        if (customImg && customImg.complete && customImg.naturalWidth > 0) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(0, 0, r - 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(customImg, -r, -r, r * 2, r * 2);
+          ctx.restore();
+        } else {
+          ctx.font = "24px -apple-system, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(info.emoji, 0, 0);
+        }
+        ctx.restore();
+      }
+
+      setupInput() {
+        const wrap = document.getElementById("canvas-wrap");
+
+        const updatePos = (clientX) => {
+          const rect = wrap.getBoundingClientRect();
+          let x = clientX - rect.left;
+          const currR = DEFAULT_TIERS[this.currentTier].radius;
+          this.pointerX = Math.max(currR + 6, Math.min(this.width - currR - 6, x));
+        };
+
+        // 鼠标实时移动（无需点击即实时跟随鼠标指针）
+        wrap.addEventListener("mousemove", (e) => {
+          if (this.isGameOver) return;
+          updatePos(e.clientX);
+        });
+
+        // 鼠标点击释放小球
+        wrap.addEventListener("click", (e) => {
+          if (this.isGameOver) return;
+          // 若刚刚是触摸事件触发的合成点击，则忽略，避免双重投放
+          if (Date.now() - this.lastDropTime < 100) return;
+          updatePos(e.clientX);
+          this.dropCurrentBall();
+        });
+
+        // 移动端触摸交互：按住滑动实时定位，松开手指释放小球
+        wrap.addEventListener("touchstart", (e) => {
+          if (this.isGameOver) return;
+          if (e.touches && e.touches[0]) {
+            this.isTouchActive = true;
+            updatePos(e.touches[0].clientX);
+          }
+        }, { passive: true });
+
+        wrap.addEventListener("touchmove", (e) => {
+          if (this.isGameOver || !this.isTouchActive) return;
+          if (e.touches && e.touches[0]) {
+            updatePos(e.touches[0].clientX);
+          }
+        }, { passive: true });
+
+        wrap.addEventListener("touchend", (e) => {
+          if (this.isGameOver || !this.isTouchActive) return;
+          this.isTouchActive = false;
+          if (e.changedTouches && e.changedTouches[0]) {
+            updatePos(e.changedTouches[0].clientX);
+          }
+          this.dropCurrentBall();
+        });
+
+        // 窗口级别的鼠标移动跟随，防止快速晃动超出边框时断开
+        window.addEventListener("mousemove", (e) => {
+          if (this.isGameOver) return;
+          const rect = wrap.getBoundingClientRect();
+          if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            updatePos(e.clientX);
+          }
+        });
+      }
+
+      setupButtons() {
+        document.getElementById("btn-sound").addEventListener("click", (e) => {
+          sound.enabled = !sound.enabled;
+          e.target.textContent = sound.enabled ? "🔔" : "🔕";
+        });
+
+        document.getElementById("btn-restart").addEventListener("click", () => {
+          this.restart();
+        });
+
+        document.getElementById("btn-re-play").addEventListener("click", () => {
+          document.getElementById("modal-over").style.display = "none";
+          this.restart();
+        });
+
+        // 自定义头像相关
+        const modalCustom = document.getElementById("modal-custom");
+        document.getElementById("btn-custom").addEventListener("click", () => {
+          this.buildTierList();
+          modalCustom.style.display = "flex";
+        });
+
+        document.getElementById("btn-save-custom").addEventListener("click", () => {
+          try {
+            localStorage.setItem("xyy_custom_images", JSON.stringify(customImages));
+          } catch(e) {}
+          updateImageCache();
+          this.renderNextPreview();
+          modalCustom.style.display = "none";
+        });
+
+        document.getElementById("btn-reset-custom").addEventListener("click", () => {
+          customImages = {};
+          localStorage.removeItem("xyy_custom_images");
+          updateImageCache();
+          this.buildTierList();
+          this.renderNextPreview();
+        });
+      }
+
+      buildTierList() {
+        const container = document.getElementById("tier-list");
+        container.innerHTML = "";
+        DEFAULT_TIERS.forEach(t => {
+          const row = document.createElement("div");
+          row.className = "tier-item";
+
+          const left = document.createElement("div");
+          left.style.display = "flex";
+          left.style.alignItems = "center";
+          left.style.gap = "8px";
+
+          const preview = document.createElement("div");
+          preview.className = "tier-avatar-preview";
+          preview.style.background = t.color;
+          preview.style.display = "flex";
+          preview.style.alignItems = "center";
+          preview.style.justifyContent = "center";
+          preview.style.fontSize = "16px";
+          preview.style.overflow = "hidden";
+
+          if (customImages[t.level]) {
+            const img = document.createElement("img");
+            img.src = customImages[t.level];
+            img.style.width = "100%";
+            img.style.height = "100%";
+            img.style.objectFit = "cover";
+            preview.appendChild(img);
+          } else {
+            preview.textContent = t.emoji;
+          }
+
+          const nameSpan = document.createElement("span");
+          nameSpan.textContent = `Lv.${t.level + 1} ${t.name}`;
+
+          left.appendChild(preview);
+          left.appendChild(nameSpan);
+
+          const right = document.createElement("div");
+          const fileInput = document.createElement("input");
+          fileInput.type = "file";
+          fileInput.accept = "image/*";
+          fileInput.style.display = "none";
+
+          const uploadBtn = document.createElement("button");
+          uploadBtn.className = "btn-secondary";
+          uploadBtn.style.padding = "4px 10px";
+          uploadBtn.textContent = customImages[t.level] ? "更换" : "上传";
+
+          uploadBtn.addEventListener("click", () => fileInput.click());
+
+          fileInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+              customImages[t.level] = evt.target.result;
+              this.buildTierList();
+            };
+            reader.readAsDataURL(file);
+          });
+
+          right.appendChild(fileInput);
+          right.appendChild(uploadBtn);
+
+          row.appendChild(left);
+          row.appendChild(right);
+          container.appendChild(row);
+        });
+      }
+
+      dropCurrentBall() {
+        const now = Date.now();
+        if (now - this.lastDropTime < this.dropCooldown) return;
+        this.lastDropTime = now;
+
+        const ball = new Ball(this.pointerX, 40, this.currentTier);
+        ball.vy = 1; // 初始向下平稳释放
+        this.balls.push(ball);
+
+        sound.playDrop();
+
+        this.currentTier = this.nextTier;
+        this.nextTier = Math.floor(Math.random() * Math.min(5, DEFAULT_TIERS.length));
+        this.renderNextPreview();
+      }
+
+      checkCollisions() {
+        for (let i = 0; i < this.balls.length; i++) {
+          const b1 = this.balls[i];
+          if (b1.markedForRemove) continue;
+
+          for (let j = i + 1; j < this.balls.length; j++) {
+            const b2 = this.balls[j];
+            if (b2.markedForRemove) continue;
+
+            const dx = b2.x - b1.x;
+            const dy = b2.y - b1.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = (b1.radius * b1.scale) + (b2.radius * b2.scale);
+
+            if (dist < minDist && dist > 0) {
+              // 检查是否相同等级且可合成
+              if (b1.level === b2.level && b1.level < DEFAULT_TIERS.length - 1) {
+                b1.markedForRemove = true;
+                b2.markedForRemove = true;
+
+                const nextLvl = b1.level + 1;
+                const midX = (b1.x + b2.x) / 2;
+                const midY = (b1.y + b2.y) / 2;
+
+                const newBall = new Ball(midX, midY, nextLvl);
+                newBall.vy = -0.3; // 合成微弱微动，不再高高弹起
+                this.balls.push(newBall);
+
+                this.addScore(DEFAULT_TIERS[nextLvl].score);
+                sound.playMerge(nextLvl);
+
+                // 爆破粒子特效
+                for (let k = 0; k < 14; k++) {
+                  this.particles.push(new Particle(midX, midY, DEFAULT_TIERS[nextLvl].color));
+                }
+                break;
+              } else {
+                // 碰撞法线 (从 b1 指向 b2)
+                const nx = dx / dist;
+                const ny = dy / dist;
+                const overlap = minDist - dist;
+
+                // 基于质量比的位置分离，避免穿插重叠
+                const totalMass = b1.mass + b2.mass;
+                const ratio1 = b2.mass / totalMass;
+                const ratio2 = b1.mass / totalMass;
+
+                b1.x -= nx * overlap * ratio1;
+                b1.y -= ny * overlap * ratio1;
+                b2.x += nx * overlap * ratio2;
+                b2.y += ny * overlap * ratio2;
+
+                // 相对速度在法线上的投影：(b2.v - b1.v) · n
+                const velAlongNormal = (b2.vx - b1.vx) * nx + (b2.vy - b1.vy) * ny;
+
+                // 核心修复：如果物体已经在分离（velAlongNormal >= 0），绝不重复施加冲量，杜绝过度弹跳
+                if (velAlongNormal < 0) {
+                  const restitution = 0.06; // 柔和碰撞弹性，消除剧烈弹跳
+                  const p = -(1 + restitution) * velAlongNormal / (1 / b1.mass + 1 / b2.mass);
+
+                  b1.vx -= (p / b1.mass) * nx;
+                  b1.vy -= (p / b1.mass) * ny;
+                  b2.vx += (p / b2.mass) * nx;
+                  b2.vy += (p / b2.mass) * ny;
+
+                  // 接触切向摩擦阻尼，抑制无限滑动
+                  const tx = -ny;
+                  const ty = nx;
+                  const velAlongTangent = (b2.vx - b1.vx) * tx + (b2.vy - b1.vy) * ty;
+                  const friction = 0.12;
+                  const frictionImpulse = -velAlongTangent * friction / (1 / b1.mass + 1 / b2.mass);
+                  b1.vx -= (frictionImpulse / b1.mass) * tx;
+                  b1.vy -= (frictionImpulse / b1.mass) * ty;
+                  b2.vx += (frictionImpulse / b2.mass) * tx;
+                  b2.vy += (frictionImpulse / b2.mass) * ty;
+                }
+              }
+            }
+          }
+        }
+
+        // 清理已合成移除的球
+        this.balls = this.balls.filter(b => !b.markedForRemove);
+      }
+
+      addScore(pts) {
+        this.score += pts;
+        this.scoreEl.textContent = this.score;
+        if (this.score > this.bestScore) {
+          this.bestScore = this.score;
+          this.bestScoreEl.textContent = this.bestScore;
+          localStorage.setItem("xyy_best_score", this.bestScore);
+        }
+      }
+
+      checkGameOver() {
+        if (this.isGameOver) return;
+        const now = Date.now();
+        let danger = false;
+
+        for (const b of this.balls) {
+          // 下落稳定1.5秒后如果停留在红线之上则触发警戒
+          if (now - b.dropTime > 1500) {
+            if (b.y - b.radius * b.scale < this.dangerLineY && Math.abs(b.vy) < 0.8) {
+              danger = true;
+              break;
+            }
+          }
+        }
+
+        if (danger) {
+          this.dangerTimer++;
+          if (this.dangerTimer > 130) { // 持续超过2秒
+            this.gameOver();
+          }
+        } else {
+          this.dangerTimer = Math.max(0, this.dangerTimer - 1);
+        }
+      }
+
+      gameOver() {
+        this.isGameOver = true;
+        sound.playOver();
+        document.getElementById("over-score").textContent = this.score;
+        const evalEl = document.getElementById("over-eval");
+        if (this.score >= 5000) {
+          evalEl.textContent = "太强啦！你成功召唤了终极小烨烨！称号：合成烨界传奇！";
+        } else if (this.score >= 2000) {
+          evalEl.textContent = "超厉害！小烨烨们被你打理得井井有条，离终极形态仅一步之遥！";
+        } else {
+          evalEl.textContent = "再接再厉，注意控制堆叠高度，向更高阶小烨烨进发吧！";
+        }
+        document.getElementById("modal-over").style.display = "flex";
+      }
+
+      restart() {
+        this.balls = [];
+        this.particles = [];
+        this.score = 0;
+        this.scoreEl.textContent = "0";
+        this.isGameOver = false;
+        this.dangerTimer = 0;
+        this.pickInitialTiers();
+      }
+
+      loop() {
+        this.ctx.clearRect(0, 0, this.width, this.height);
+
+        // 绘制顶部警戒线 (危险虚线)
+        this.ctx.save();
+        this.ctx.strokeStyle = this.dangerTimer > 30 ? "#ff4d4f" : "rgba(255, 120, 117, 0.4)";
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([6, 6]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, this.dangerLineY);
+        this.ctx.lineTo(this.width, this.dangerLineY);
+        this.ctx.stroke();
+
+        if (this.dangerTimer > 30) {
+          this.ctx.fillStyle = "#ff4d4f";
+          this.ctx.font = "bold 12px sans-serif";
+          this.ctx.fillText("⚠️ 危险预警！不要超过虚线", 14, this.dangerLineY - 8);
+        }
+        this.ctx.restore();
+
+        // 更新与绘制小球
+        for (const ball of this.balls) {
+          ball.update(1, this.gravity, this.damping, this.width, this.height);
+        }
+
+        // 多重碰撞迭代提高稳定性
+        for (let iter = 0; iter < 4; iter++) {
+          this.checkCollisions();
+        }
+
+        for (const ball of this.balls) {
+          ball.draw(this.ctx);
+        }
+
+        // 更新与绘制粒子
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+          const p = this.particles[i];
+          p.update();
+          p.draw(this.ctx);
+          if (p.alpha <= 0.05) {
+            this.particles.splice(i, 1);
+          }
+        }
+
+        // 绘制当前等待投放的球与实时跟随鼠标的掉落引导线
+        if (!this.isGameOver) {
+          const curInfo = DEFAULT_TIERS[this.currentTier];
+          const r = curInfo.radius;
+
+          this.ctx.save();
+
+          // 1. 垂直虚线投影：实时跟随鼠标指针位置
+          this.ctx.strokeStyle = "rgba(255, 107, 107, 0.55)";
+          this.ctx.lineWidth = 2;
+          this.ctx.setLineDash([6, 6]);
+          this.ctx.beginPath();
+          this.ctx.moveTo(this.pointerX, 40 + r);
+          this.ctx.lineTo(this.pointerX, this.height);
+          this.ctx.stroke();
+
+          // 2. 底部落点小圆点标记
+          this.ctx.setLineDash([]);
+          this.ctx.fillStyle = "rgba(255, 107, 107, 0.4)";
+          this.ctx.beginPath();
+          this.ctx.arc(this.pointerX, this.height - 4, 3, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // 3. 顶部跟随球体
+          this.ctx.translate(this.pointerX, 40);
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, r, 0, Math.PI * 2);
+          this.ctx.fillStyle = curInfo.color;
+          this.ctx.fill();
+
+          const customImg = imgCache[curInfo.level];
+          if (customImg && customImg.complete && customImg.naturalWidth > 0) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(0, 0, r - 2, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.drawImage(customImg, -r, -r, r * 2, r * 2);
+            ctx.restore();
+          } else {
+            this.ctx.font = `${Math.max(12, Math.floor(r * 0.75))}px -apple-system, sans-serif`;
+            this.ctx.textAlign = "center";
+            this.ctx.textBaseline = "middle";
+            this.ctx.fillText(curInfo.emoji, 0, 0);
+          }
+
+          // 外描边
+          this.ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, r - 1, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          this.ctx.restore();
+        }
+
+        this.checkGameOver();
+
+        requestAnimationFrame(() => this.loop());
+      }
+    }
+
+    // 启动游戏
+    window.addEventListener("DOMContentLoaded", () => {
+      loadCustomImages();
+      new Game();
+    });
+  </script>
+</body>
+</html>
